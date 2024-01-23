@@ -1,0 +1,48 @@
+const http = require('http');
+const https = require('https');
+http.createServer(handler).listen(1337);
+
+function handler(req, res) {
+	console.log('serve: ' + req.url);
+
+	if (req.url.startsWith('/_api')) {
+		const myHeaders = req.headers
+		myHeaders.Host = 'onefleet.backend.lol:443'
+		const options = {
+			hostname: 'onefleet.backend.lol',
+			port: 443,
+			path: req.url,
+			method: req.method,
+			headers: myHeaders
+		};
+	
+		const proxy = https.request(options, _res => {
+			res.writeHead(_res.statusCode, _res.headers)
+			_res.pipe(res, {
+				end: true
+			});
+		});
+	
+		req.pipe(proxy, {
+			end: true
+		});
+	} else {
+		const options = {
+			hostname: '127.0.0.1',
+			port: 8000,
+			path: req.url,
+			method: req.method
+		};
+		
+		const proxy = http.request(options, _res => {
+			res.writeHead(_res.statusCode, _res.headers)
+			_res.pipe(res, {
+				end: true
+			});
+		});
+		
+		req.pipe(proxy, {
+			end: true
+		});
+	}
+}

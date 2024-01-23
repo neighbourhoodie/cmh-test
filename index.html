@@ -1,0 +1,53 @@
+<input name="username" value="admin" />
+<input name="password" value=""/>
+<button id="login">Login</button>
+<button id="replicate">Replicate</button>
+<div id="docs"></div>
+
+<script src="pouchdb-8.0.1.js"></script>
+<script>
+	const remoteBaseUrl = '_api'
+	const db = new PouchDB('test')
+	const remote = `${window.origin}/${remoteBaseUrl}/test`
+
+	async function login (username, password) {
+		const response = await fetch(`${remoteBaseUrl}/_session`, {
+			method: 'post',
+			body: JSON.stringify({
+				username, password
+			}),
+			headers: {
+				'Content-Type': 'application/json'
+			}
+		})
+		const body = await response.json()
+		console.log(body)
+	}
+
+	const loginBtn = document.getElementById('login')
+	loginBtn.addEventListener('click', async () => {
+		const username = document.getElementsByName('username')[0].value
+		const password = document.getElementsByName('password')[0].value
+		console.log('logging in', username, password)
+		await login(username, password)
+	})
+
+	const replicateBtn = document.getElementById('replicate')
+	replicateBtn.addEventListener('click', async () => {
+		console.log('replicating')
+		await db.post({a: 1})
+		const replication = db.replicate.to(remote)
+			.on('change', (change) => {console.log('change', change)})
+			.on('change', (checkpoint) => {console.log('checkpoint', checkpoint)})
+			.on('error', (error) => {console.log('error', error)})
+		console.log(replication)
+	})
+
+
+	async function main () {
+		const docs = await db.allDocs()
+		document.getElementById('docs').innerHTML = `<pre>${docs.rows.map(d => d.id + `\n`)}</pre>`
+	}
+	main()
+</script>
+
